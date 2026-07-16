@@ -1,0 +1,60 @@
+{
+  "entities": {
+    "LeaderboardEntry": {
+      "title": "LeaderboardEntry",
+      "description": "A high score entry on the global leaderboard.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The unique ID of the user."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "The display name of the player."
+        },
+        "score": {
+          "type": "integer",
+          "description": "The score achieved."
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date and time the score was achieved."
+        }
+      },
+      "required": ["userId", "displayName", "score", "timestamp"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Public profile metadata for a registered player.",
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "description": "The user's chosen display name."
+        },
+        "highScore": {
+          "type": "integer",
+          "description": "The highest score achieved by this user."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the user account was first created."
+        }
+      },
+      "required": ["displayName", "highScore", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/leaderboard/{entryId}": {
+      "schema": "LeaderboardEntry",
+      "description": "Global list of high scores achieved."
+    },
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile details."
+    }
+  }
+}

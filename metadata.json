@@ -1,0 +1,10 @@
+{
+  "name": "Remix: Gemini Slingshot",
+  "description": "Gemini 3 Flash is your strategic co-pilot, analyzing the board and suggesting the best shots in this webcam bubble shooter.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

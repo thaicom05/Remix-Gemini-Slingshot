@@ -1,0 +1,88 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net: Default Deny All
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Reuseable, hardened helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Validation Blueprint for User Profiles
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['displayName', 'highScore', 'createdAt']) &&
+             data.keys().size() == 3 &&
+             data.displayName is string &&
+             data.displayName.size() >= 1 &&
+             data.displayName.size() <= 50 &&
+             data.highScore is int &&
+             data.highScore >= 0;
+    }
+
+    // Validation Blueprint for Leaderboard Entries
+    function isValidLeaderboardEntry(data) {
+      return data.keys().hasAll(['userId', 'displayName', 'score', 'timestamp']) &&
+             data.keys().size() == 4 &&
+             data.userId is string &&
+             data.userId == request.auth.uid &&
+             data.displayName is string &&
+             data.displayName.size() >= 1 &&
+             data.displayName.size() <= 50 &&
+             data.score is int &&
+             data.score > 0;
+    }
+
+    // User Profiles match block
+    match /users/{userId} {
+      allow get: if isSignedIn() && request.auth.uid == userId && isValidId(userId);
+      allow list: if false; // Block blanket listing of users to prevent scrapers
+
+      allow create: if isSignedIn() && 
+                       request.auth.uid == userId && 
+                       isValidId(userId) && 
+                       isValidUserProfile(incoming()) && 
+                       incoming().createdAt == request.time;
+
+      allow update: if isSignedIn() && 
+                       request.auth.uid == userId && 
+                       isValidId(userId) && 
+                       isValidUserProfile(incoming()) && 
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'highScore']) &&
+                       incoming().highScore >= existing().highScore;
+
+      allow delete: if false;
+    }
+
+    // Leaderboard Entries match block
+    match /leaderboard/{entryId} {
+      // Allows reading entries for leaderboard display, verifying resource structure
+      allow get: if isValidId(entryId);
+      allow list: if true;
+
+      allow create: if isSignedIn() && 
+                       isValidId(entryId) && 
+                       isValidLeaderboardEntry(incoming()) && 
+                       incoming().timestamp == request.time;
+
+      // Immutable entries: prevent tampering
+      allow update, delete: if false;
+    }
+  }
+}
